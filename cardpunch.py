@@ -138,7 +138,7 @@ def columns_to_card(columns):
 def punch_card(text, out):
 	columns = []
 	spaces = ' ' * 80
-	text = 'LOGIN 3004,11427 abcd' + spaces
+	text = text + spaces
 	card_text = text[0:80]
 	for c in card_text:
 		columns.append(bits_to_column(character_to_bits(c)))

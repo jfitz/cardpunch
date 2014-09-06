@@ -6,17 +6,21 @@
 {% include "templates/head_bootstrap.html" %}
 {% include "templates/css.html" %}
 {% include "templates/head_gae_js.html" %}
+<script type="text/javascript">
+function punch_card() {
+    var value = $("#cardtext").val();
+    $("#cardimage").attr( "src", "/punch?text=" + value);
+}
+</script>
 </head>
 <body>
 {% include "templates/logged_out_header.html" %}
 {% if message != '' %}
 <p>{{ message }}</p>
 {% endif %}
-<form action="punch" target="_blank">
-<input type="text" name="text">
-<button type="submit">Punch</button>
-</form>
-<img src="/punch?text=abcdefghijklmnop" alt="">
+<input type="text" name="text" id="cardtext">
+<button type="submit" onclick="punch_card()">Punch</button>
+<img src="/punch?text=abcdefghijklmnop" alt="" id="cardimage">
 {% include "templates/body_gae_logo.html" %}
 {% include "templates/body_bootstrap.html" %}
 </body>
