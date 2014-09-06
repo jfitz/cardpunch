@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+{% include "templates/meta.html" %}
+{% include "templates/title.html" %}
+{% include "templates/head_bootstrap.html" %}
+{% include "templates/css.html" %}
+{% include "templates/head_gae_js.html" %}
+</head>
+<body>
+{% include "templates/logged_out_header.html" %}
+{% if message != '' %}
+<p>{{ message }}</p>
+{% endif %}
+<form action="punch" target="_blank">
+<input type="text" name="text">
+<button type="submit">Punch</button>
+</form>
+<img src="/punch?text=abcdefghijklmnop" alt="">
+{% include "templates/body_gae_logo.html" %}
+{% include "templates/body_bootstrap.html" %}
+</body>
+</html>

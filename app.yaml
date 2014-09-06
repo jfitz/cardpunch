@@ -1,0 +1,22 @@
+application: cardpunch
+version: prod
+runtime: python27
+threadsafe: true
+api_version: 1
+
+handlers:
+- url: /css
+  static_dir: css
+
+- url: /js
+  static_dir: js
+
+- url: /images
+  static_dir: images
+
+- url: /.*
+  script: cardpunch.application
+
+libraries:
+- name: jinja2
+  version: latest

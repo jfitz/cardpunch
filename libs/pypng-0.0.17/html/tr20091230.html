@@ -1,0 +1,258 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>How fast is PyPNG? &mdash; PyPNG 0.0.17 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.17',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="PyPNG 0.0.17 documentation" href="index.html" />
+    <link rel="prev" title="PNG: Chunk by Chunk" href="chunk.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="chunk.html" title="PNG: Chunk by Chunk"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">PyPNG 0.0.17 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="how-fast-is-pypng">
+<h1>How fast is PyPNG?<a class="headerlink" href="#how-fast-is-pypng" title="Permalink to this headline">¶</a></h1>
+<p>This PyPNG Technical Report intends to give a rough idea of how fast
+PyPNG is and how aspects of its API and the PNG files affect its speed.</p>
+<div class="section" id="general-notes">
+<h2>General Notes<a class="headerlink" href="#general-notes" title="Permalink to this headline">¶</a></h2>
+<p>Although PyPNG is written in pure Python, and is therefore pretty slow,
+some of the heavy lifting is done by the <tt class="docutils literal"><span class="pre">zlib</span></tt> module.  The zlib module
+performs the compression/decompression of the PNG file and is written
+in C, and is fairly fast.  Because of this, some operations using PyPNG
+can be acceptably fast, but it is easy to do things which can make it
+much much slower.</p>
+<p>So far as is practical, PyPNG tries to avoid doing anything that would
+needlessly slow down the processing of a PNG file.  For example: it does
+not decode the entire image into memory if it does not need to; it
+handles entire rows at a time, not individual pixels; it does not leak
+precious bodily fluids.</p>
+</div>
+<div class="section" id="decoding-reading-png-files">
+<h2>Decoding (reading) PNG files<a class="headerlink" href="#decoding-reading-png-files" title="Permalink to this headline">¶</a></h2>
+<p>In general you should use a streaming method for reading the data:
+<a class="reference internal" href="png.html#png.Reader.read" title="png.Reader.read"><tt class="xref py py-meth docutils literal"><span class="pre">png.Reader.read()</span></tt></a>, <a class="reference internal" href="png.html#png.Reader.asDirect" title="png.Reader.asDirect"><tt class="xref py py-meth docutils literal"><span class="pre">png.Reader.asDirect()</span></tt></a>,
+<a class="reference internal" href="png.html#png.Reader.asRGB" title="png.Reader.asRGB"><tt class="xref py py-meth docutils literal"><span class="pre">png.Reader.asRGB()</span></tt></a>, and so on.  <a class="reference internal" href="png.html#png.Reader.read_flat" title="png.Reader.read_flat"><tt class="xref py py-meth docutils literal"><span class="pre">png.Reader.read_flat()</span></tt></a> does
+not stream, it reads the entire image into a single array (and in a test
+with a 4 megapixel image, this took 80% longer.  The first run
+of this test, cold, was much longer; perhaps there is a allocation
+related start-up effect that makes it even worse).</p>
+<p>Unfortunately many of the remaining things that can cause major slowdown
+are features of the inputs PNG (and so may be out of your control):</p>
+<dl class="docutils">
+<dt>PNGs that use filtering</dt>
+<dd>Factor of 4 to 9!</dd>
+<dt>Interlaced PNGs</dt>
+<dd>Factor of 2.8.</dd>
+<dt>Repacking (for PNG with bitdepths less than 8)</dt>
+<dd>Factor of 1.7.</dd>
+</dl>
+<div class="section" id="filtering">
+<h3>Filtering<a class="headerlink" href="#filtering" title="Permalink to this headline">¶</a></h3>
+<p>One of the internal features of the PNG file format is filtering (see
+<a class="reference external" href="http://www.w3.org/TR/PNG/#9Filters">the PNG spec for more details</a>).
+Prior to compression each row can be optionally filtered to try and
+improve its compressibility.  When decoding, each row has to be
+unfiltered after being decompressed.  In PyPNG the unfiltering is
+done in Python and is extremely slow.</p>
+<p>In a test, a 4 megapixel RGB test image with no filtering (filter type 0
+for each scanline) decoded in about 3.5 seconds.  The same image recoded
+to use a Paeth filter for each scanline
+(using Netpbm&#8217;s <tt class="docutils literal"><span class="pre">pnmtopng</span> <span class="pre">-paeth</span></tt>) decodes in about 32 seconds:
+9 times slower!</p>
+<p>Paeth is probably something of a worst case when it comes to
+filtering, the other filter types are not as slow to unfilter.  Typically
+a file will use a mixture of filter types.  For example, the same
+image was resaved using Apple&#8217;s Preview tool on OS X (Preview
+probably uses a derived version of <tt class="docutils literal"><span class="pre">libpng</span></tt> and probably uses one of
+its filter heuristics for choosing filters).  This test image decodes
+in about 14 seconds.  About 4 times slower.</p>
+<p>If you have any choice in the matter, and you want PyPNG to go quickly,
+do not filter your PNG images when saving them.  PyPNG does not filter
+its images when saving them, and offers no options to enable filtering.
+Enabling filtering can make the output file smaller, but even if PyPNG
+were to offer filtering at some later date, it would not be the default
+because it would slow down workflows using PyPNG too much.</p>
+</div>
+<div class="section" id="interlacing">
+<h3>Interlacing<a class="headerlink" href="#interlacing" title="Permalink to this headline">¶</a></h3>
+<p>PNG supports an <em>interlace</em> feature; the pixels of an interlaced PNG do
+not appear in the file in the same order that they appear in the image
+(this feature supports progressive display whilst downloading over a
+slow connexion).  PyPNG has to do more
+work to reassemble the pixels in the correct order.  In one test, the 4
+megapixel RGB test image took about 9.9 seconds to decode when
+interlaced, about 3.5 when not interlaced.  About 2.8 times slower.</p>
+</div>
+<div class="section" id="repacking">
+<h3>Repacking<a class="headerlink" href="#repacking" title="Permalink to this headline">¶</a></h3>
+<p>Repacking happens when pixel data has to be unpacked to fit into a
+Python array.  It will happen for 1-,2-, and 4-bit PNG files because in
+that case the PNG file stores multiple pixels per byte and in Python
+each pixel is unpacked into its own value (the value is usually stored
+in a byte in a byte array).</p>
+<p>A test with a 4 megapixel 2-bit greyscale image decoded in about 5.6
+seconds; the same image saved as an 8-bit image decoded in about 3.3
+seconds.  Unpacking the 2-bit data took about 72% longer.</p>
+</div>
+<div class="section" id="channel-extraction">
+<h3>Channel Extraction<a class="headerlink" href="#channel-extraction" title="Permalink to this headline">¶</a></h3>
+<p>It&#8217;s worth mentioning a Python trick to do channel extraction: slicing.
+Say we are trying to extract the alpha channel from an RGBA PNG file.
+If <tt class="docutils literal"><span class="pre">row</span></tt> is a single row in boxed row flat pixel format, then
+<tt class="docutils literal"><span class="pre">row[3::4]</span></tt> is the alpha channel for this row.</p>
+<p>Here&#8217;s an example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">png</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="s">&#39;testRGBA.png&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">asDirect</span><span class="p">()[</span><span class="mi">2</span><span class="p">]:</span>
+    <span class="n">row</span><span class="p">[</span><span class="mi">3</span><span class="p">::</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">tofile</span><span class="p">(</span><span class="n">rawfile</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This write out the alpha channel of the file <tt class="docutils literal"><span class="pre">testRGBA.png</span></tt> to the file
+<tt class="docutils literal"><span class="pre">rawfile</span></tt> (the alpha channel is written out as a raw sequence of
+bytes).  This code is a little bit naughty, it assumes that each row is
+a Python <tt class="docutils literal"><span class="pre">array.array</span></tt> instance.  Whilst this is not documented, it&#8217;s
+too useful to not rely on, so I&#8217;ll probably document that rows are
+<tt class="docutils literal"><span class="pre">array.array</span></tt> instances.</p>
+<p>With a 4 megapixel test image the above code runs in about 4.5 seconds
+on my machine.  Using the slice notation for extracting the channel is
+essentially free: changing the code to write out all the channels (by
+replacing <tt class="docutils literal"><span class="pre">row[3::4].tofile</span></tt> with <tt class="docutils literal"><span class="pre">row.tofile</span></tt>) makes it run in
+about 4.6 seconds.  Even though we do more copying and allocation when
+we do the channel extraction, the smaller volume of data we handle makes
+up for it.</p>
+<p>We can use NetPBM&#8217;s pngtopam tool to do the same job, but this time
+everything happens in compiled C code.  A test using NetPBM
+extracts the alpha channel to a file in about 0.44 seconds.  So
+PyPNG is about 10 times slower.</p>
+</div>
+<div class="section" id="channel-synthesis">
+<h3>Channel Synthesis<a class="headerlink" href="#channel-synthesis" title="Permalink to this headline">¶</a></h3>
+<p>If you use the <tt class="xref py py-meth docutils literal"><span class="pre">asRGBA()</span></tt> method to ask for 4 channels and the
+source PNG file has only 3 (RGB) then the alpha channel needs to be
+synthesized in Python code.  This takes a small amount of time.
+For a 4 megapixel RGB test image, <tt class="xref py py-meth docutils literal"><span class="pre">asRGB()</span></tt> took about 3.5
+seconds, whereas <tt class="xref py py-meth docutils literal"><span class="pre">asRGBA()</span></tt> took about 4.3 seconds, about 22%
+longer.</p>
+<p>Similar the <tt class="xref py py-meth docutils literal"><span class="pre">asRGB()</span></tt> method when used on a greyscale PNG will
+duplicate the grey channel 3 times to produce colour data.  A 4
+megapixel grey test image decoded in about 2.2 seconds using
+:meth`asDirect` (grey data), and about 2.6 seconds using <tt class="xref py py-meth docutils literal"><span class="pre">asRGB()</span></tt>:
+20% longer.</p>
+<p>Another time when the alpha channel is synthesized is when a <tt class="docutils literal"><span class="pre">tRNS</span></tt>
+chunk is used for &#8220;1-bit&#8221; alpha (in type 2 and 4 PNGs).  For a 4
+megapixel RGB test image with a <tt class="docutils literal"><span class="pre">tRNS</span></tt> chunk, <tt class="xref py py-meth docutils literal"><span class="pre">asDirect()</span></tt> took
+about 12 seconds (computing the alpha channel); <tt class="xref py py-meth docutils literal"><span class="pre">read()</span></tt> took
+about 3.6 seconds (raw RGB values, effectively ignoring the <tt class="docutils literal"><span class="pre">tRNS</span></tt>
+chunk).  About 3.4 times slower.  If anyone is sufficiently motivated,
+computing the alpha channel from the <tt class="docutils literal"><span class="pre">tRNS</span></tt> chunk could probably be
+made faster.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">How fast is PyPNG?</a><ul>
+<li><a class="reference internal" href="#general-notes">General Notes</a></li>
+<li><a class="reference internal" href="#decoding-reading-png-files">Decoding (reading) PNG files</a><ul>
+<li><a class="reference internal" href="#filtering">Filtering</a></li>
+<li><a class="reference internal" href="#interlacing">Interlacing</a></li>
+<li><a class="reference internal" href="#repacking">Repacking</a></li>
+<li><a class="reference internal" href="#channel-extraction">Channel Extraction</a></li>
+<li><a class="reference internal" href="#channel-synthesis">Channel Synthesis</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="chunk.html"
+                        title="previous chapter">PNG: Chunk by Chunk</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/tr20091230.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="chunk.html" title="PNG: Chunk by Chunk"
+             >previous</a> |</li>
+        <li><a href="index.html">PyPNG 0.0.17 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009, David Jones.
+      Last updated on 2014-05-27T08:34:25.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
+    </div>
+  </body>
+</html>
