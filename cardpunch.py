@@ -101,6 +101,17 @@ block_punch = [
 	'1111'
 ]
 
+def legal_character(character):
+	if character.upper() in characters.keys():
+		return character.upper()
+	return ' '
+
+def legal_for_punchcard(text):
+	legal_text = ''
+	for c in text:
+		legal_text += legal_character(c)
+	return legal_text
+
 def character_to_bits(character):
 	if character in characters.keys():
 		return characters[character]
@@ -135,7 +146,28 @@ def columns_to_card(columns):
 		card.append(row)
 	return card
 
-def punch_card(text, out):
+def punch_card_svg(text):
+	svg = []
+	svg.append('<?xml version="1.0" standalone="no"?>')
+	svg.append('<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">')
+	svg.append('<svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="607pt" height="270pt" viewBox="0 0 607 270" preserveAspectRatio="xMidYMid meet">')
+	svg.append('<metadata>Created by CardPunch on Google App Engine (cardpunch.appspot.com)</metadata>')
+	svg.append('<rect x="1" y="1" width="605" height="268" fill="white" stroke="black" stroke-width="2"></rect>')
+	column = 0
+	for c in text:
+		x = 10 + column * 7
+		bits = character_to_bits(c)
+		zone = 0
+		for bit in bits:
+			y = 16 + zone * 21
+			if bit == 1:
+				svg.append('<rect x="' + str(x) + '" y="' + str(y) + '" width="4" height="12" fill="black"></rect>')
+			zone += 1
+		column += 1
+	svg.append('</svg>')
+	return "".join(svg)
+	
+def punch_card_png(text, out):
 	columns = []
 	spaces = ' ' * 80
 	text = text + spaces
@@ -160,11 +192,17 @@ class IndexPage(webapp2.RequestHandler):
 class PunchRequest(webapp2.RequestHandler):
 	def get(self):
 		card_text = self.request.get('text')
-		self.response.headers['Content-Type'] = 'image/png'
-		self.response.headers['Content-Transfer-Encoding'] = 'Binary'
-		self.response.headers['Content-disposition'] = 'attachment; filename="card.png"'
-		punch_card(card_text, self.response.out)
-
+		legal_text = legal_for_punchcard(card_text)
+		format = self.request.get('format')
+		if format == 'png':
+			self.response.headers['Content-Type'] = 'image/png'
+			self.response.headers['Content-Transfer-Encoding'] = 'Binary'
+			punch_card_png(legal_text, self.response.out)
+		else:
+			self.response.headers['Content-Type'] = 'image/svg+xml'
+			svg = punch_card_svg(legal_text)
+			self.response.out.write(svg)
+			
 class NotFoundPage(webapp2.RequestHandler):
 	def get(self):
 		self.error(404)

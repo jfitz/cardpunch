@@ -9,7 +9,7 @@
 <script type="text/javascript">
 function punch_card() {
     var value = $("#cardtext").val();
-    $("#cardimage").attr( "src", "/punch?text=" + value);
+    $("#cardimage").attr( "src", "/punch?text=" + value + "&format=svg");
 }
 </script>
 </head>
@@ -20,7 +20,7 @@ function punch_card() {
 {% endif %}
 <input type="text" name="text" id="cardtext">
 <button type="submit" onclick="punch_card()">Punch</button>
-<img src="/punch?text=abcdefghijklmnop" alt="" id="cardimage">
+<img src="/punch?text=ABCDEFGHIJKLMNOPQRSTUVWXYZ&" alt="" id="cardimage">
 {% include "templates/body_gae_logo.html" %}
 {% include "templates/body_bootstrap.html" %}
 </body>
