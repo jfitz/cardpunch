@@ -8,8 +8,9 @@
 {% include "templates/head_gae_js.html" %}
 <script type="text/javascript">
 function punch_card() {
-    var value = $("#cardtext").val();
-    $("#cardimage").attr( "src", "/punch?text=" + value + "&format=svg");
+	var value = escape($("#cardtext").val());
+	$.ajax({ url: "/legaltext?text=" + value }).done(function (legal_text) { $("#legal_text").html(legal_text) } );
+	$("#cardimage").attr( "src", "/punch?text=" + value + "&format=svg");
 }
 </script>
 </head>
@@ -20,6 +21,10 @@ function punch_card() {
 {% endif %}
 <input type="text" name="text" id="cardtext">
 <button type="submit" onclick="punch_card()">Punch</button>
+<p>&nbsp;</p>
+<span>The legal punchcard text is: </span>
+<span id="legal_text"></span>
+<p>&nbsp;</p>
 <img src="/punch?text=ABCDEFGHIJKLMNOPQRSTUVWXYZ&" alt="" id="cardimage">
 {% include "templates/body_gae_logo.html" %}
 {% include "templates/body_bootstrap.html" %}

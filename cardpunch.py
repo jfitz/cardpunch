@@ -202,6 +202,13 @@ class PunchRequest(webapp2.RequestHandler):
 			self.response.headers['Content-Type'] = 'image/svg+xml'
 			svg = punch_card_svg(legal_text)
 			self.response.out.write(svg)
+
+class LegalText(webapp2.RequestHandler):
+	def get(self):
+		card_text = self.request.get('text')
+		legal_text = legal_for_punchcard(card_text)
+		self.response.headers['Content-Type'] = 'image/plain'
+		self.response.out.write(legal_text)
 			
 class NotFoundPage(webapp2.RequestHandler):
 	def get(self):
@@ -214,6 +221,7 @@ application = webapp2.WSGIApplication(
 	[
 		('/', IndexPage),
 		('/punch', PunchRequest),
+		('/legaltext', LegalText),
 		('/.*', NotFoundPage)
 	],
 	debug=False)
