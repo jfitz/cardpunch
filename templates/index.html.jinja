@@ -15,10 +15,7 @@ function punch_card() {
 </script>
 </head>
 <body>
-{% include "templates/logged_out_header.html" %}
-{% if message != '' %}
-<p>{{ message }}</p>
-{% endif %}
+{% include "templates/header.html" %}
 <input type="text" name="text" id="cardtext">
 <button type="submit" onclick="punch_card()">Punch</button>
 <p>&nbsp;</p>
