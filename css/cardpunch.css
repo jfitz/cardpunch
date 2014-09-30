@@ -1,0 +1,13 @@
+/* CSS for cardpunch */
+.product1 {
+  color: black;
+  background-color: orange;
+}
+.product2 {
+  color: black;
+  background-color: #999966;
+}
+.pagehead {
+  font-size: 20px;
+  border: 2px solid white;
+}
