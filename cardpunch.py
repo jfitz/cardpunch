@@ -175,10 +175,14 @@ def punch_card_svg(text):
 	svg.append('<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">')
 	svg.append('<svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="607pt" height="270pt" viewBox="0 0 607 270" preserveAspectRatio="xMidYMid meet">')
 	svg.append('<metadata>Created by CardPunch on Google App Engine (cardpunch.appspot.com)</metadata>')
-	svg.append('<rect x="1" y="1" width="605" height="268" fill="white" stroke="black" stroke-width="2"></rect>')
+	svg.append('<rect x="1" y="1" width="605" height="268" fill="#F3E5AB" stroke="black" stroke-width="2"></rect>')
 	column = 0
-	for c in text:
-		x = 10 + column * 7
+	spaces = ' ' * 80
+	text = text + spaces
+	card_text = text[0:80]
+	for c in card_text:
+		x = 30 + column * 7
+		svg.append('<text x="' + str(x) + '" y="11" font-family="Monospace" font-size="9" fill="black">' + c + '</text>')
 		bits = character_to_bits(c)
 		zone = 0
 		for bit in bits:
@@ -228,10 +232,11 @@ class PunchRequest(webapp2.RequestHandler):
 
 class LegalText(webapp2.RequestHandler):
 	def get(self):
-		card_text = self.request.get('text')
-		legal_text = legal_for_punchcard(card_text)
+		text = self.request.get('text')
+		legal_text = legal_for_punchcard(text)
+		card_text = legal_text[0:80]
 		self.response.headers['Content-Type'] = 'image/plain'
-		self.response.out.write(legal_text)
+		self.response.out.write(card_text)
 			
 class NotFoundPage(webapp2.RequestHandler):
 	def get(self):

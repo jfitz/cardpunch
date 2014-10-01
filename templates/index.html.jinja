@@ -8,22 +8,31 @@
 {% include "templates/head_gae_js.html" %}
 <script type="text/javascript">
 function punch_card() {
-	var value = escape($("#cardtext").val());
-	$.ajax({ url: "/legaltext?text=" + value }).done(function (legal_text) { $("#legal_text").html(legal_text) } );
-	$("#cardimage").attr( "src", "/punch?text=" + value + "&format=svg");
+	var card_text = escape($("#cardtext").val());
+	var format = "svg";
+	$.ajax({ url: "/legaltext?text=" + card_text }).done(function (legal_text) { $("#legal_text").html(legal_text) } );
+	$("#cardimage").attr( "src", "/punch?text=" + card_text + "&format=" + format);
 }
 </script>
 </head>
 <body>
 {% include "templates/header.html" %}
-<p>&nbsp;</p>
-<input type="text" name="text" id="cardtext">
-<button type="submit" onclick="punch_card()">Punch</button>
-<p>&nbsp;</p>
-<span>The legal punchcard text is: </span>
-<span id="legal_text"></span>
-<p>&nbsp;</p>
-<img src="/punch?text=ABCDEFGHIJKLMNOPQRSTUVWXYZ&" alt="" id="cardimage">
+<h2>Punchcards</h2>
+A long time ago, we humans communicated with computers via punchcards. These punchcards were heavy paper stock with holes punched in them (hence the name). Special reader devices (card readers) would advance the cards across an array of sensors (metal contacts or optical) and detect the punched patterns.
+<p></p>
+This website lets you convert text to a punchcard image.
+<h2>Character sets</h2>
+Punchcards used a limited number of characters. and the character sets varied from application to application (codes for scientific applications were not quite the same as codes for commercial applications) and over time. I believe that there is no one standard for all possible punch codes.
+<p></p>
+In general, punchcards were limited to uppercase letters, digits, and a set of punctuation marks.
+<h2>Try it!</h2>
+Enter your text, press 'Punch', and you will see an image of your punch card. Eighty characters maximum, and only the legal characters for a punchcard. (Invalid characters are converted to spaces.)
+<p></p>
+&nbsp;<input type="text" name="text" id="cardtext">&nbsp;<button type="submit" onclick="punch_card()">Punch</button>
+<p></p>
+&nbsp;<span>The legal punchcard text is: </span>&nbsp;<span id="legal_text"></span>
+<p></p>
+&nbsp;<img src="/punch?text=ABCDEFGHIJKLMNOPQRSTUVWXYZ&" alt="" id="cardimage">
 {% include "templates/body_gae_logo.html" %}
 {% include "templates/body_bootstrap.html" %}
 </body>
