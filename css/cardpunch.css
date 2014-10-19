@@ -7,3 +7,7 @@
   color: black;
   background-color: #999966;
 }
+
+body {
+    border-left: 10px solid white;
+}

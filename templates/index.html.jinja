@@ -9,9 +9,8 @@
 <script type="text/javascript">
 function punch_card() {
 	var card_text = escape($("#cardtext").val());
-	var format = "svg";
 	$.ajax({ url: "/legaltext?text=" + card_text }).done(function (legal_text) { $("#legal_text").html(legal_text) } );
-	$("#cardimage").attr( "src", "/punch?text=" + card_text + "&format=" + format);
+	$("#cardimage").attr( "src", "/punch?text=" + card_text);
 }
 </script>
 </head>
@@ -28,7 +27,8 @@ In general, punchcards were limited to uppercase letters, digits, and a set of p
 <h2>Try it!</h2>
 Enter your text, press 'Punch', and you will see an image of your punch card. Eighty characters maximum, and only the legal characters for a punchcard. (Invalid characters are converted to spaces.)
 <p></p>
-&nbsp;<input type="text" name="text" id="cardtext">&nbsp;<button type="submit" onclick="punch_card()">Punch</button>
+&nbsp;<input type="text" name="text" id="cardtext">&nbsp;
+<button type="submit" onclick="punch_card()">Punch</button>
 <p></p>
 &nbsp;<span>The legal punchcard text is: </span>&nbsp;<span id="legal_text"></span>
 <p></p>

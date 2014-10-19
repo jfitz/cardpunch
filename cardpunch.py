@@ -2,8 +2,6 @@ import string
 import re
 import jinja2
 import os
-from io import BytesIO
-import png
 import webapp2
 
 jinja_environment = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.dirname(__file__)))
@@ -74,56 +72,6 @@ characters = {
 	'"': [0,0,0,0,0,0,0,0,0,1,1,0]
 }
 
-block_no_punch = [
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111'
-]
-
-block_punch = [
-	'00000011',
-	'00000011',
-	'00000011',
-	'00000011',
-	'00000011',
-	'00000011',
-	'00000011',
-	'00000011',
-	'00000011',
-	'00000011',
-	'00000011',
-	'00000011',
-	'00000011',
-	'00000011',
-	'00000011',
-	'00000011',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111',
-	'11111111'
-]
-
 def legal_character(character):
 	if character.upper() in characters.keys():
 		return character.upper()
@@ -169,7 +117,7 @@ def columns_to_card(columns):
 		card.append(row)
 	return card
 
-def punch_card_svg(text):
+def punch_card(text):
 	svg = []
 	svg.append('<?xml version="1.0" standalone="no"?>')
 	svg.append('<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">')
@@ -194,22 +142,6 @@ def punch_card_svg(text):
 	svg.append('</svg>')
 	return "".join(svg)
 	
-def punch_card_png(text, out):
-	columns = []
-	spaces = ' ' * 80
-	text = text + spaces
-	card_text = text[0:80]
-	for c in card_text:
-		columns.append(bits_to_column(character_to_bits(c)))
-
-	card = columns_to_card(columns)
-
-	io = BytesIO()
-	w = png.Writer(len(card[0]), len(card), greyscale=True, bitdepth=1)
-	w.write(io, card)
-	out.write(io.getvalue())
-	io.close()
-
 class IndexPage(webapp2.RequestHandler):
 	def get(self):
 		template_values = { }
@@ -220,15 +152,9 @@ class PunchRequest(webapp2.RequestHandler):
 	def get(self):
 		card_text = self.request.get('text')
 		legal_text = legal_for_punchcard(card_text)
-		format = self.request.get('format')
-		if format == 'png':
-			self.response.headers['Content-Type'] = 'image/png'
-			self.response.headers['Content-Transfer-Encoding'] = 'Binary'
-			punch_card_png(legal_text, self.response.out)
-		else:
-			self.response.headers['Content-Type'] = 'image/svg+xml'
-			svg = punch_card_svg(legal_text)
-			self.response.out.write(svg)
+		self.response.headers['Content-Type'] = 'image/svg+xml'
+		svg = punch_card(legal_text)
+		self.response.out.write(svg)
 
 class LegalText(webapp2.RequestHandler):
 	def get(self):
